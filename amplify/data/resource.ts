@@ -10,16 +10,12 @@ const schema = a.schema({
     .authorization((allow) => [allow.owner()]),
 
   recipeAssistant: a
-    .generation({
-      aiModel: a.ai.model('Claude 3.5 Haiku'),
+    .conversation({
+      aiModel: a.ai.model('Amazon Nova Micro'),
       systemPrompt:
         'You are a concise recipe assistant. Help users find recipes based on the ingredients they have. Keep answers practical and easy to follow.',
     })
-    .arguments({
-      prompt: a.string().required(),
-    })
-    .returns(a.string())
-    .authorization((allow) => allow.authenticated()),
+    .authorization((allow) => allow.owner()),
 });
 
 export type Schema = ClientSchema<typeof schema>;

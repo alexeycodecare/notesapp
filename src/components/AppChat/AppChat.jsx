@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Button, Heading, Text, TextAreaField } from '@aws-amplify/ui-react';
 import { client } from '../../lib/amplifyClient';
 import './style.scss';
@@ -11,11 +11,16 @@ const STARTERS = [
 
 export default function AppChat() {
   const [prompt, setPrompt] = useState('');
-  const [response, setResponse] = useState('');
+  const [messages, setMessages] = useState([]);
+  const [assistantDraft, setAssistantDraft] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isConversationReady, setIsConversationReady] = useState(false);
 
-  function getGenerationErrorMessage(errors) {
+  const conversationRef = useRef(null);
+  const assistantBufferRef = useRef('');
+
+  function getApiErrorMessage(errors) {
     const message = errors?.[0]?.message ?? 'The assistant request failed.';
     const errorType = errors?.[0]?.errorType ?? '';
 
@@ -26,6 +31,54 @@ export default function AppChat() {
     return message;
   }
 
+  function appendAssistantStreamChunk(event) {
+    const chunk =
+      event?.contentBlockDelta?.delta?.text ??
+      event?.delta?.text ??
+      event?.text ??
+      '';
+
+    if (!chunk) {
+      return;
+    }
+
+    assistantBufferRef.current += chunk;
+    setAssistantDraft(assistantBufferRef.current);
+  }
+
+  async function startConversation() {
+    setError('');
+    setIsConversationReady(false);
+
+    const result = await client.conversations.recipeAssistant.create();
+    if (result.errors?.length) {
+      setError(getApiErrorMessage(result.errors));
+      return false;
+    }
+
+    conversationRef.current = result.data;
+    conversationRef.current.onStreamEvent({
+      next: appendAssistantStreamChunk,
+      error: (streamError) => {
+        setError(streamError instanceof Error ? streamError.message : 'The conversation stream failed.');
+      },
+    });
+
+    setIsConversationReady(true);
+    return true;
+  }
+
+  async function handleNewConversation() {
+    assistantBufferRef.current = '';
+    setAssistantDraft('');
+    setMessages([]);
+    await startConversation();
+  }
+
+  useEffect(() => {
+    void startConversation();
+  }, []);
+
   async function handleSubmit(event) {
     event.preventDefault();
 
@@ -34,25 +87,40 @@ export default function AppChat() {
       return;
     }
 
-    setIsLoading(true);
-    setError('');
-    setResponse('');
-
-    try {
-      const result = await client.generations.recipeAssistant({
-        prompt: trimmedPrompt,
-      });
-
-      if (result.errors?.length) {
-        setError(getGenerationErrorMessage(result.errors));
+    if (!conversationRef.current) {
+      const ready = await startConversation();
+      if (!ready) {
         return;
       }
+    }
 
-      setResponse(result.data ?? 'No response returned.');
+    setMessages((previousMessages) => [
+      ...previousMessages,
+      { role: 'user', text: trimmedPrompt, id: `${Date.now()}-user` },
+    ]);
+    setPrompt('');
+    setIsLoading(true);
+    setError('');
+    assistantBufferRef.current = '';
+    setAssistantDraft('');
+
+    try {
+      await conversationRef.current.sendMessage({
+        content: [{ text: trimmedPrompt }],
+      });
+
+      if (assistantBufferRef.current.trim()) {
+        setMessages((previousMessages) => [
+          ...previousMessages,
+          { role: 'assistant', text: assistantBufferRef.current, id: `${Date.now()}-assistant` },
+        ]);
+      }
     } catch (submissionError) {
       setError(submissionError instanceof Error ? submissionError.message : 'The assistant request failed.');
     } finally {
       setIsLoading(false);
+      assistantBufferRef.current = '';
+      setAssistantDraft('');
     }
   }
 
@@ -62,7 +130,7 @@ export default function AppChat() {
         <p className="app-chat__eyebrow">Amplify AI</p>
         <Heading level={2}>Recipe assistant</Heading>
         <Text>
-          This route is backed by Amazon Bedrock through Amplify Gen 2. Send the list of ingredients you have, and the assistant will suggest a recipe you can make with them.
+          This conversation route stores per-user chat history in DynamoDB. Each turn keeps the context from earlier messages in the current chat.
         </Text>
       </div>
 
@@ -89,6 +157,9 @@ export default function AppChat() {
           onChange={(event) => setPrompt(event.target.value)}
         />
         <div className="app-chat__actions">
+          <Button type="button" variation="link" onClick={handleNewConversation}>
+            Start new chat
+          </Button>
           <Button type="submit" variation="primary" isLoading={isLoading} loadingText="Thinking">
             Ask assistant
           </Button>
@@ -98,8 +169,25 @@ export default function AppChat() {
       {error ? <p className="app-chat__error">{error}</p> : null}
 
       <section className="app-chat__response" aria-live="polite">
-        <Heading level={3}>Response</Heading>
-        <pre>{response || 'The assistant response will appear here after you send a prompt.'}</pre>
+        <Heading level={3}>Conversation</Heading>
+        {!isConversationReady ? <p>Connecting to your conversation...</p> : null}
+        {!messages.length && !assistantDraft ? (
+          <p>Your messages and assistant replies will appear here.</p>
+        ) : null}
+        <div className="app-chat__messages">
+          {messages.map((message) => (
+            <article key={message.id} className={`app-chat__message app-chat__message--${message.role}`}>
+              <p className="app-chat__role">{message.role === 'user' ? 'You' : 'Assistant'}</p>
+              <p>{message.text}</p>
+            </article>
+          ))}
+          {assistantDraft ? (
+            <article className="app-chat__message app-chat__message--assistant">
+              <p className="app-chat__role">Assistant</p>
+              <p>{assistantDraft}</p>
+            </article>
+          ) : null}
+        </div>
       </section>
     </div>
   );
