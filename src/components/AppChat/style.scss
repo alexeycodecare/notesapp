@@ -50,6 +50,7 @@
 
 .app-chat__actions {
   display: flex;
+  gap: 0.75rem;
   justify-content: flex-end;
 }
 
@@ -62,6 +63,40 @@
   margin: 1rem 0 0;
   white-space: pre-wrap;
   word-break: break-word;
+}
+
+.app-chat__messages {
+  display: grid;
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+.app-chat__message {
+  border: 1px solid #d7dde8;
+  border-radius: 14px;
+  padding: 0.9rem;
+
+  p {
+    margin: 0;
+  }
+}
+
+.app-chat__message--user {
+  background: #eff6ff;
+  border-color: #bfd6f6;
+}
+
+.app-chat__message--assistant {
+  background: #f8fafc;
+}
+
+.app-chat__role {
+  color: #486581;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  margin-bottom: 0.3rem !important;
+  text-transform: uppercase;
 }
 
 @media (max-width: 640px) {
