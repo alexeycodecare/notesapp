@@ -31,6 +31,19 @@ export default function AppChat() {
     return message;
   }
 
+  function getUnknownErrorMessage(unknownError) {
+    if (unknownError instanceof Error) {
+      return unknownError.message;
+    }
+
+    const nestedErrors = unknownError?.errors;
+    if (Array.isArray(nestedErrors) && nestedErrors.length) {
+      return getApiErrorMessage(nestedErrors);
+    }
+
+    return 'The assistant request failed.';
+  }
+
   function appendAssistantStreamChunk(event) {
     const chunk =
       event?.contentBlockDelta?.delta?.text ??
@@ -60,7 +73,7 @@ export default function AppChat() {
     conversationRef.current.onStreamEvent({
       next: appendAssistantStreamChunk,
       error: (streamError) => {
-        setError(streamError instanceof Error ? streamError.message : 'The conversation stream failed.');
+        setError(getUnknownErrorMessage(streamError));
       },
     });
 
@@ -105,9 +118,14 @@ export default function AppChat() {
     setAssistantDraft('');
 
     try {
-      await conversationRef.current.sendMessage({
+      const result = await conversationRef.current.sendMessage({
         content: [{ text: trimmedPrompt }],
       });
+
+      if (result?.errors?.length) {
+        setError(getApiErrorMessage(result.errors));
+        return;
+      }
 
       if (assistantBufferRef.current.trim()) {
         setMessages((previousMessages) => [
@@ -116,7 +134,7 @@ export default function AppChat() {
         ]);
       }
     } catch (submissionError) {
-      setError(submissionError instanceof Error ? submissionError.message : 'The assistant request failed.');
+      setError(getUnknownErrorMessage(submissionError));
     } finally {
       setIsLoading(false);
       assistantBufferRef.current = '';
