@@ -3,7 +3,7 @@ import './style.scss'
 export default function Footer({ children }) {
   return (
     <footer className="footer">
-      <p>© 2024 Notes App. All rights reserved.</p>
+      <p>Amplify Gen 2 + Bedrock notes assistant</p>
     </footer>
   )
 }

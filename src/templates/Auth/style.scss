@@ -1,0 +1,11 @@
+.auth-wrapper {
+  min-height: 100vh;
+
+  [data-amplify-authenticator] {
+    min-height: 100vh;
+  }
+
+  [data-amplify-container] {
+    max-width: none;
+  }
+}

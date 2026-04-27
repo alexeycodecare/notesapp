@@ -1,16 +1,25 @@
-# React + Vite
+# Notes AI App
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+This project now includes an Amplify Gen 2 AI route backed by Amazon Bedrock.
 
-Currently, two official plugins are available:
+## What was added
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- An AI generation route named `recipeAssistant` in `amplify/data/resource.ts`
+- A frontend assistant UI for authenticated users
+- Shared Amplify client configuration for calling the AI route from React
 
-## React Compiler
+## Before you run it
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+1. Make sure your AWS account has access to the Bedrock model used by the schema (`Claude 3.5 Haiku`).
+2. Start or refresh the Amplify sandbox so backend changes are deployed and `amplify_outputs.json` stays current:
 
-## Expanding the ESLint configuration
+```bash
+npx ampx sandbox
+```
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+3. In another terminal, start the Vite app:
+
+```bash
+npm run dev
+```
+

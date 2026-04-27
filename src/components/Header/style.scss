@@ -1,5 +1,10 @@
 .header {
-  color: #fff;
-  padding: 20px;
+  padding: 24px;
   text-align: center;
+
+  h1 {
+    color: #16324f;
+    font-size: clamp(2rem, 4vw, 3.5rem);
+    letter-spacing: -0.04em;
+  }
 }
