@@ -10,7 +10,7 @@ This project now includes an Amplify Gen 2 AI conversation route backed by Amazo
 
 ## Before you run it
 
-1. Make sure your AWS account has access to the Bedrock model used by the schema (`Claude 3.5 Haiku`).
+1. Make sure your AWS account has access to the Bedrock model used by the schema (`Amazon Nova Micro`).
 2. Start or refresh the Amplify sandbox so backend changes are deployed and `amplify_outputs.json` stays current:
 
 ```bash
