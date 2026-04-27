@@ -1,0 +1,26 @@
+// Responsive Container Sizes
+$container-xs: 600px;
+$container-sm: 960px;
+$container-md: 1280px;
+$container-lg: 1920px;
+
+// Mixin for media queries less than a certain breakpoint
+@mixin less-than($media) {
+  @if $media == xs {
+    @media only screen and (max-width: ($container-xs - 1)) {
+      @content;
+    }
+  } @else if $media == sm {
+    @media only screen and (max-width: ($container-sm - 1)) {
+      @content;
+    }
+  } @else if $media == md {
+    @media only screen and (max-width: ($container-md - 1)) {
+      @content;
+    }
+  } @else if $media == lg {
+    @media only screen and (max-width: ($container-lg - 1)) {
+      @content;
+    }
+  }
+}
