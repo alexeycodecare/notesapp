@@ -1,0 +1,18 @@
+@mixin animate($animation, $duration, $method, $times) {
+  animation: $animation $duration $method $times;
+}
+
+@mixin Keyframes($name) {
+  @keyframes #{$name} {
+    @content;
+  }
+}
+
+@include Keyframes(fade) {
+  from {
+    opacity:  1;
+  }
+  to {
+    opacity: 0;
+  }
+}
