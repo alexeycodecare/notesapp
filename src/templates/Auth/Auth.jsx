@@ -4,6 +4,7 @@ import {
 } from "@aws-amplify/ui-react";
 import "@aws-amplify/ui-react/styles.css";
 import AppChat from '../../components/AppChat/AppChat.jsx';
+import RecipeGenerator from '../../components/RecipeGenerator/RecipeGenerator.jsx';
 import Layout from '../Layout/Layout.jsx';
 import './style.scss'
 
@@ -15,6 +16,7 @@ export default function Auth() {
         {({ signOut }) => (
           <Layout>
             <>
+              <RecipeGenerator />
               <AppChat />
               <Button onClick={signOut}>Sign Out</Button>
             </>

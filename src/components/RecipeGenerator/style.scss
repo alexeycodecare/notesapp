@@ -1,0 +1,82 @@
+.recipe-generator {
+  display: grid;
+  gap: 1.5rem;
+  margin: 0 auto 2rem;
+  max-width: 860px;
+}
+
+.recipe-generator__intro,
+.recipe-generator__form,
+.recipe-generator__result {
+  background: #ffffff;
+  border: 1px solid #d7dde8;
+  border-radius: 20px;
+  box-shadow: 0 18px 48px rgba(15, 23, 42, 0.08);
+  padding: 1.5rem;
+}
+
+.recipe-generator__eyebrow {
+  color: #0b6bcb;
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  margin-bottom: 0.5rem;
+  text-transform: uppercase;
+}
+
+.recipe-generator__starters {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.recipe-generator__starter {
+  background: linear-gradient(135deg, #f2fbf7, #f8fafc);
+  border: 1px solid #b6e4cf;
+  border-radius: 16px;
+  color: #173a2b;
+  cursor: pointer;
+  font: inherit;
+  min-height: 92px;
+  padding: 1rem;
+  text-align: left;
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+}
+
+.recipe-generator__starter:hover {
+  box-shadow: 0 12px 30px rgba(22, 163, 74, 0.14);
+  transform: translateY(-2px);
+}
+
+.recipe-generator__actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.recipe-generator__error {
+  color: #b42318;
+  font-weight: 600;
+}
+
+.recipe-generator__card {
+  display: grid;
+  gap: 1rem;
+}
+
+.recipe-generator__ingredients {
+  margin: 0;
+  padding-left: 1.2rem;
+}
+
+.recipe-generator__instructions {
+  margin: 0;
+  white-space: pre-wrap;
+}
+
+@media (max-width: 640px) {
+  .recipe-generator__intro,
+  .recipe-generator__form,
+  .recipe-generator__result {
+    padding: 1rem;
+  }
+}
