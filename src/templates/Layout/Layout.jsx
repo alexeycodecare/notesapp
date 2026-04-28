@@ -3,11 +3,11 @@ import Section from '../Section/Section.jsx'
 import Header from './../../components/Header/Header.jsx'
 import Footer from '../../components/Footer/Footer.jsx'
 
-export default function Layout({ children }) {
+export default function Layout({ children, signOut }) {
   return (
     <main className="layout">
       <Section>
-        <Header />
+        <Header signOut={signOut} />
       </Section>
       <Section className="content">
         {children}

@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Button, Heading, Text, TextAreaField } from '@aws-amplify/ui-react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import { client } from '../../lib/amplifyClient';
 import './style.scss';
 
@@ -142,8 +144,20 @@ export default function AppChat() {
     }
   }
 
+  function renderMessageBody(message) {
+    if (message.role === 'assistant') {
+      return (
+        <ReactMarkdown remarkPlugins={[remarkGfm]}>
+          {message.text}
+        </ReactMarkdown>
+      );
+    }
+
+    return <p>{message.text}</p>;
+  }
+
   return (
-    <div className="app-chat">
+    <section className="app-chat">
       <div className="app-chat__intro">
         <p className="app-chat__eyebrow">Amplify AI</p>
         <Heading level={2}>Recipe assistant</Heading>
@@ -196,17 +210,19 @@ export default function AppChat() {
           {messages.map((message) => (
             <article key={message.id} className={`app-chat__message app-chat__message--${message.role}`}>
               <p className="app-chat__role">{message.role === 'user' ? 'You' : 'Assistant'}</p>
-              <p>{message.text}</p>
+              <div className="app-chat__body">{renderMessageBody(message)}</div>
             </article>
           ))}
           {assistantDraft ? (
             <article className="app-chat__message app-chat__message--assistant">
               <p className="app-chat__role">Assistant</p>
-              <p>{assistantDraft}</p>
+              <div className="app-chat__body">
+                <ReactMarkdown remarkPlugins={[remarkGfm]}>{assistantDraft}</ReactMarkdown>
+              </div>
             </article>
           ) : null}
         </div>
       </section>
-    </div>
+    </section>
   );
 }

@@ -1,6 +1,7 @@
 import {
   Authenticator,
   Button,
+  Divider,
 } from "@aws-amplify/ui-react";
 import "@aws-amplify/ui-react/styles.css";
 import AppChat from '../../components/AppChat/AppChat.jsx';
@@ -14,11 +15,11 @@ export default function Auth() {
     <div className="auth-wrapper">
       <Authenticator>
         {({ signOut }) => (
-          <Layout>
+          <Layout signOut={signOut}>
             <>
               <RecipeGenerator />
+              <Divider className="divider" orientation="horizontal" />
               <AppChat />
-              <Button onClick={signOut}>Sign Out</Button>
             </>
           </Layout>
         )}

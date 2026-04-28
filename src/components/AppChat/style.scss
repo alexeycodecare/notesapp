@@ -74,7 +74,9 @@
 .app-chat__message {
   border: 1px solid #d7dde8;
   border-radius: 14px;
+  max-width: min(75ch, 82%);
   padding: 0.9rem;
+  width: fit-content;
 
   p {
     margin: 0;
@@ -84,10 +86,12 @@
 .app-chat__message--user {
   background: #eff6ff;
   border-color: #bfd6f6;
+  justify-self: end;
 }
 
 .app-chat__message--assistant {
   background: #f8fafc;
+  justify-self: start;
 }
 
 .app-chat__role {
@@ -97,6 +101,55 @@
   letter-spacing: 0.08em;
   margin-bottom: 0.3rem !important;
   text-transform: uppercase;
+}
+
+.app-chat__body {
+  color: #172b4d;
+
+  > :first-child {
+    margin-top: 0;
+  }
+
+  > :last-child {
+    margin-bottom: 0;
+  }
+
+  p,
+  ul,
+  ol,
+  pre,
+  blockquote {
+    margin: 0.5rem 0;
+  }
+
+  ul,
+  ol {
+    padding-left: 1.2rem;
+  }
+
+  code {
+    background: rgba(9, 30, 66, 0.08);
+    border-radius: 6px;
+    font-size: 0.92em;
+    padding: 0.15rem 0.35rem;
+  }
+
+  pre {
+    background: #101e34;
+    border-radius: 10px;
+    color: #e6edf7;
+    overflow-x: auto;
+    padding: 0.75rem;
+
+    code {
+      background: transparent;
+      padding: 0;
+    }
+  }
+
+  a {
+    color: #0b6bcb;
+  }
 }
 
 @media (max-width: 640px) {
