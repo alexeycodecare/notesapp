@@ -1,6 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button, Heading, Loader, Text, TextAreaField, View } from '@aws-amplify/ui-react';
-import { useAIGeneration } from '../../lib/amplifyClient';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import { client, useAIGeneration } from '../../lib/amplifyClient';
 import './style.scss';
 
 const STARTERS = [
@@ -12,7 +14,54 @@ const STARTERS = [
 export default function RecipeGenerator() {
   const [description, setDescription] = useState('');
   const [requestError, setRequestError] = useState('');
+  const [savedRecipes, setSavedRecipes] = useState([]);
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveError, setSaveError] = useState('');
   const [{ data, isLoading, error }, generateRecipe] = useAIGeneration('generateRecipe');
+
+  useEffect(() => {
+    fetchSavedRecipes();
+  }, []);
+
+  async function fetchSavedRecipes() {
+    const { data: notes } = await client.models.Note.list();
+    setSavedRecipes(notes ?? []);
+  }
+
+  async function handleSaveRecipe() {
+    if (!data?.name) {
+      return;
+    }
+
+    setIsSaving(true);
+    setSaveError('');
+
+    const ingredientsList = (data.ingredients ?? []).join('\n');
+    const description = `**Ingredients:**\n${ingredientsList}\n\n**Instructions:**\n${data.instructions ?? ''}`;
+
+    try {
+      const { errors } = await client.models.Note.create({
+        name: data.name,
+        description,
+      });
+
+      if (errors?.length) {
+        setSaveError(errors[0].message ?? 'Failed to save recipe.');
+        return;
+      }
+
+      await fetchSavedRecipes();
+    } catch (saveErr) {
+      setSaveError(saveErr instanceof Error ? saveErr.message : 'Failed to save recipe.');
+    } finally {
+      setIsSaving(false);
+    }
+  }
+
+  async function handleDeleteRecipe(id) {
+    await client.models.Note.delete({ id });
+    await fetchSavedRecipes();
+  }
 
   const activeError = requestError || error?.message || '';
 
@@ -88,8 +137,46 @@ export default function RecipeGenerator() {
               ))}
             </View>
             <p className="recipe-generator__instructions">{data.instructions}</p>
+            <div className="recipe-generator__card-actions">
+              {saveError ? <p className="recipe-generator__error">{saveError}</p> : null}
+              <Button
+                variation="primary"
+                size="small"
+                isLoading={isSaving}
+                loadingText="Saving"
+                onClick={handleSaveRecipe}
+              >
+                Save recipe
+              </Button>
+            </div>
           </div>
         ) : null}
+      </section>
+
+      <section className="recipe-generator__saved">
+        <Heading level={3}>Saved recipes</Heading>
+        {!savedRecipes.length ? (
+          <p>Your saved recipes will appear here.</p>
+        ) : null}
+        <div className="recipe-generator__saved-list">
+          {savedRecipes.map((recipe) => (
+            <article key={recipe.id} className="recipe-generator__saved-card">
+              <div className="recipe-generator__saved-header">
+                <Heading level={4}>{recipe.name}</Heading>
+                <Button
+                  variation="destructive"
+                  size="small"
+                  onClick={() => handleDeleteRecipe(recipe.id)}
+                >
+                  Delete
+                </Button>
+              </div>
+              <div className="recipe-generator__saved-body">
+                <ReactMarkdown remarkPlugins={[remarkGfm]}>{recipe.description}</ReactMarkdown>
+              </div>
+            </article>
+          ))}
+        </div>
       </section>
     </section>
   );
