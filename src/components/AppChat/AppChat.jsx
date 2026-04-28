@@ -14,13 +14,25 @@ const STARTERS = [
 export default function AppChat() {
   const [prompt, setPrompt] = useState('');
   const [messages, setMessages] = useState([]);
-  const [assistantDraft, setAssistantDraft] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isConversationReady, setIsConversationReady] = useState(false);
 
   const conversationRef = useRef(null);
-  const assistantBufferRef = useRef('');
+  const activeAssistantMessageIdRef = useRef(null);
+  const messagesContainerRef = useRef(null);
+  const finalizationTimeoutRef = useRef(null);
+
+  function scheduleFinalization() {
+    if (finalizationTimeoutRef.current) {
+      clearTimeout(finalizationTimeoutRef.current);
+    }
+
+    finalizationTimeoutRef.current = setTimeout(() => {
+      console.log('Stream finalization timeout triggered');
+      finalizeAssistantMessage();
+    }, 1500);
+  }
 
   function getApiErrorMessage(errors) {
     const message = errors?.[0]?.message ?? 'The assistant request failed.';
@@ -57,8 +69,36 @@ export default function AppChat() {
       return;
     }
 
-    assistantBufferRef.current += chunk;
-    setAssistantDraft(assistantBufferRef.current);
+    const activeAssistantMessageId = activeAssistantMessageIdRef.current;
+    if (!activeAssistantMessageId) {
+      return;
+    }
+
+    setMessages((previousMessages) =>
+      previousMessages.map((message) =>
+        message.id === activeAssistantMessageId
+          ? { ...message, text: `${message.text}${chunk}` }
+          : message,
+      ),
+    );
+
+    scheduleFinalization();
+  }
+
+  function finalizeAssistantMessage() {
+    const activeAssistantMessageId = activeAssistantMessageIdRef.current;
+    if (!activeAssistantMessageId) {
+      return;
+    }
+
+    setMessages((previousMessages) =>
+      previousMessages.filter(
+        (message) =>
+          message.id !== activeAssistantMessageId || message.text.trim().length > 0,
+      ),
+    );
+
+    activeAssistantMessageIdRef.current = null;
   }
 
   async function startConversation() {
@@ -84,8 +124,7 @@ export default function AppChat() {
   }
 
   async function handleNewConversation() {
-    assistantBufferRef.current = '';
-    setAssistantDraft('');
+    activeAssistantMessageIdRef.current = null;
     setMessages([]);
     await startConversation();
   }
@@ -93,6 +132,17 @@ export default function AppChat() {
   useEffect(() => {
     void startConversation();
   }, []);
+
+  useEffect(() => {
+    if (!messagesContainerRef.current) {
+      return;
+    }
+
+    messagesContainerRef.current.scrollTo({
+      top: messagesContainerRef.current.scrollHeight,
+      behavior: 'smooth',
+    });
+  }, [messages]);
 
   async function handleSubmit(event) {
     event.preventDefault();
@@ -109,15 +159,19 @@ export default function AppChat() {
       }
     }
 
+    const messageTimestamp = Date.now();
+    const userMessageId = `${messageTimestamp}-user`;
+    const assistantMessageId = `${messageTimestamp}-assistant`;
+
+    activeAssistantMessageIdRef.current = assistantMessageId;
     setMessages((previousMessages) => [
       ...previousMessages,
-      { role: 'user', text: trimmedPrompt, id: `${Date.now()}-user` },
+      { role: 'user', text: trimmedPrompt, id: userMessageId },
+      { role: 'assistant', text: '', id: assistantMessageId },
     ]);
     setPrompt('');
     setIsLoading(true);
     setError('');
-    assistantBufferRef.current = '';
-    setAssistantDraft('');
 
     try {
       const result = await conversationRef.current.sendMessage({
@@ -125,27 +179,28 @@ export default function AppChat() {
       });
 
       if (result?.errors?.length) {
-        setError(getApiErrorMessage(result.errors));
+        const errorMsg = getApiErrorMessage(result.errors);
+        setError(errorMsg);
+        finalizeAssistantMessage();
         return;
       }
 
-      if (assistantBufferRef.current.trim()) {
-        setMessages((previousMessages) => [
-          ...previousMessages,
-          { role: 'assistant', text: assistantBufferRef.current, id: `${Date.now()}-assistant` },
-        ]);
-      }
+      scheduleFinalization();
     } catch (submissionError) {
-      setError(getUnknownErrorMessage(submissionError));
+      const errorMsg = getUnknownErrorMessage(submissionError);
+      setError(errorMsg);
+      finalizeAssistantMessage();
     } finally {
       setIsLoading(false);
-      assistantBufferRef.current = '';
-      setAssistantDraft('');
     }
   }
 
   function renderMessageBody(message) {
     if (message.role === 'assistant') {
+      if (!message.text.trim()) {
+        return <p>Typing...</p>;
+      }
+
       return (
         <ReactMarkdown remarkPlugins={[remarkGfm]}>
           {message.text}
@@ -166,6 +221,22 @@ export default function AppChat() {
         </Text>
       </div>
 
+      <section className="app-chat__response" aria-live="polite">
+        <Heading level={3}>Conversation</Heading>
+        {!isConversationReady ? <p>Connecting to your conversation...</p> : null}
+        {!messages.length ? (
+          <p>Your messages and assistant replies will appear here.</p>
+        ) : null}
+        <div className="app-chat__messages" ref={messagesContainerRef}>
+          {messages.map((message) => (
+            <article key={message.id} className={`app-chat__message app-chat__message--${message.role}`}>
+              <p className="app-chat__role">{message.role === 'user' ? 'You' : 'Assistant'}</p>
+              <div className="app-chat__body">{renderMessageBody(message)}</div>
+            </article>
+          ))}
+        </div>
+      </section>
+
       <div className="app-chat__starters" aria-label="Prompt starters">
         {STARTERS.map((starter) => (
           <button
@@ -179,12 +250,14 @@ export default function AppChat() {
         ))}
       </div>
 
+      {error ? <p className="app-chat__error">{error}</p> : null}
+
       <form className="app-chat__form" onSubmit={handleSubmit}>
         <TextAreaField
           label="Prompt"
           labelHidden
           placeholder="Paste rough notes or describe what you want the assistant to do..."
-          rows={10}
+          rows={3}
           value={prompt}
           onChange={(event) => setPrompt(event.target.value)}
         />
@@ -197,32 +270,6 @@ export default function AppChat() {
           </Button>
         </div>
       </form>
-
-      {error ? <p className="app-chat__error">{error}</p> : null}
-
-      <section className="app-chat__response" aria-live="polite">
-        <Heading level={3}>Conversation</Heading>
-        {!isConversationReady ? <p>Connecting to your conversation...</p> : null}
-        {!messages.length && !assistantDraft ? (
-          <p>Your messages and assistant replies will appear here.</p>
-        ) : null}
-        <div className="app-chat__messages">
-          {messages.map((message) => (
-            <article key={message.id} className={`app-chat__message app-chat__message--${message.role}`}>
-              <p className="app-chat__role">{message.role === 'user' ? 'You' : 'Assistant'}</p>
-              <div className="app-chat__body">{renderMessageBody(message)}</div>
-            </article>
-          ))}
-          {assistantDraft ? (
-            <article className="app-chat__message app-chat__message--assistant">
-              <p className="app-chat__role">Assistant</p>
-              <div className="app-chat__body">
-                <ReactMarkdown remarkPlugins={[remarkGfm]}>{assistantDraft}</ReactMarkdown>
-              </div>
-            </article>
-          ) : null}
-        </div>
-      </section>
     </section>
   );
 }

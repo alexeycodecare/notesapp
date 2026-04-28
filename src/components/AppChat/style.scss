@@ -15,6 +15,11 @@
   padding: 1.5rem;
 }
 
+.app-chat__response {
+  display: grid;
+  gap: 0.75rem;
+}
+
 .app-chat__eyebrow {
   color: #0b6bcb;
   font-size: 0.85rem;
@@ -66,9 +71,13 @@
 }
 
 .app-chat__messages {
+  align-content: start;
   display: grid;
   gap: 0.75rem;
+  max-height: 28rem;
   margin-top: 1rem;
+  overflow-y: auto;
+  padding-right: 0.25rem;
 }
 
 .app-chat__message {
