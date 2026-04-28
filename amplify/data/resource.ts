@@ -11,7 +11,7 @@ const schema = a.schema({
 
   recipeAssistant: a
     .conversation({
-      aiModel: a.ai.model('Claude 3 Haiku'),
+      aiModel: a.ai.model('Amazon Nova Micro'),
       systemPrompt:
         'You are a concise recipe assistant. Help users find recipes based on the ingredients they have. Keep answers practical and easy to follow.',
     })
@@ -19,7 +19,7 @@ const schema = a.schema({
 
   generateRecipe: a
     .generation({
-      aiModel: a.ai.model('Claude 3 Haiku'),
+      aiModel: a.ai.model('Amazon Nova Micro'),
       systemPrompt:
         'You are a practical recipe generator. Return a recipe name, a short ingredient list, and clear step-by-step cooking instructions based on the user description.',
     })
