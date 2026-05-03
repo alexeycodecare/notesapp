@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Button, Heading, Loader, Text, TextAreaField, View } from '@aws-amplify/ui-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import { getUrl, uploadData } from 'aws-amplify/storage';
 import { client, useAIGeneration } from '../../lib/amplifyClient';
 import './style.scss';
 
@@ -17,7 +18,17 @@ export default function RecipeGenerator() {
   const [savedRecipes, setSavedRecipes] = useState([]);
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState('');
+  const [manualImageFile, setManualImageFile] = useState(null);
+  const [manualImagePreview, setManualImagePreview] = useState('');
   const [{ data, isLoading, error }, generateRecipe] = useAIGeneration('generateRecipe');
+
+  useEffect(() => {
+    return () => {
+      if (manualImagePreview) {
+        URL.revokeObjectURL(manualImagePreview);
+      }
+    };
+  }, [manualImagePreview]);
 
   useEffect(() => {
     fetchSavedRecipes();
@@ -25,7 +36,25 @@ export default function RecipeGenerator() {
 
   async function fetchSavedRecipes() {
     const { data: notes } = await client.models.Note.list();
-    setSavedRecipes(notes ?? []);
+    const withUrls = await Promise.all(
+      (notes ?? []).map(async (note) => {
+        if (!note.image) {
+          return note;
+        }
+
+        try {
+          const imageUrl = await getUrl({
+            path: ({ identityId }) => `media/${identityId}/${note.image}`,
+          });
+
+          return { ...note, imageUrl: imageUrl.url.toString() };
+        } catch {
+          return note;
+        }
+      }),
+    );
+
+    setSavedRecipes(withUrls);
   }
 
   async function handleSaveRecipe() {
@@ -40,9 +69,28 @@ export default function RecipeGenerator() {
     const description = `**Ingredients:**\n${ingredientsList}\n\n**Instructions:**\n${data.instructions ?? ''}`;
 
     try {
+      let imageName = null;
+
+      if (manualImageFile) {
+        const mimeType = manualImageFile.type || 'image/png';
+        const extension =
+          manualImageFile.name.split('.').pop()?.toLowerCase() ||
+          (mimeType.includes('jpeg') ? 'jpg' : mimeType.includes('webp') ? 'webp' : 'png');
+        imageName = `${Date.now()}-${data.name.toLowerCase().replace(/[^a-z0-9]+/g, '-')}.${extension}`;
+
+        await uploadData({
+          path: ({ identityId }) => `media/${identityId}/${imageName}`,
+          data: manualImageFile,
+          options: {
+            contentType: mimeType,
+          },
+        }).result;
+      }
+
       const { errors } = await client.models.Note.create({
         name: data.name,
         description,
+        ...(imageName ? { image: imageName } : {}),
       });
 
       if (errors?.length) {
@@ -51,11 +99,33 @@ export default function RecipeGenerator() {
       }
 
       await fetchSavedRecipes();
+      setManualImageFile(null);
+      setManualImagePreview('');
     } catch (saveErr) {
       setSaveError(saveErr instanceof Error ? saveErr.message : 'Failed to save recipe.');
     } finally {
       setIsSaving(false);
     }
+  }
+
+  function handleManualImageChange(event) {
+    const selectedFile = event.target.files?.[0] ?? null;
+
+    if (!selectedFile) {
+      setManualImageFile(null);
+      setManualImagePreview('');
+      return;
+    }
+
+    if (!selectedFile.type.startsWith('image/')) {
+      setSaveError('Please choose an image file.');
+      event.target.value = '';
+      return;
+    }
+
+    setSaveError('');
+    setManualImageFile(selectedFile);
+    setManualImagePreview(URL.createObjectURL(selectedFile));
   }
 
   async function handleDeleteRecipe(id) {
@@ -78,6 +148,9 @@ export default function RecipeGenerator() {
 
     try {
       await generateRecipe({ description: trimmedDescription });
+      setSaveError('');
+      setManualImageFile(null);
+      setManualImagePreview('');
     } catch (generationError) {
       setRequestError(generationError instanceof Error ? generationError.message : 'Recipe generation failed.');
     }
@@ -137,8 +210,22 @@ export default function RecipeGenerator() {
               ))}
             </View>
             <p className="recipe-generator__instructions">{data.instructions}</p>
+            <label className="recipe-generator__upload">
+              <span>Upload image (optional)</span>
+              <input type="file" accept="image/*" onChange={handleManualImageChange} />
+            </label>
+            {manualImagePreview ? (
+              <div className="recipe-generator__upload-preview">
+                <img
+                  className="recipe-generator__upload-thumbnail"
+                  src={manualImagePreview}
+                  alt={`Selected visual for ${data.name}`}
+                />
+                <span className="recipe-generator__upload-filename">{manualImageFile?.name}</span>
+              </div>
+            ) : null}
+            {saveError ? <p className="recipe-generator__error">{saveError}</p> : null}
             <div className="recipe-generator__card-actions">
-              {saveError ? <p className="recipe-generator__error">{saveError}</p> : null}
               <Button
                 variation="primary"
                 size="small"
@@ -172,6 +259,13 @@ export default function RecipeGenerator() {
                 </Button>
               </div>
               <div className="recipe-generator__saved-body">
+                {recipe.imageUrl ? (
+                  <img
+                    className="recipe-generator__saved-image"
+                    src={recipe.imageUrl}
+                    alt={`Saved visual for ${recipe.name}`}
+                  />
+                ) : null}
                 <ReactMarkdown remarkPlugins={[remarkGfm]}>{recipe.description}</ReactMarkdown>
               </div>
             </article>

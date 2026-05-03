@@ -5,8 +5,8 @@ import { storage } from './storage/resource';
 /**
  * @see https://docs.amplify.aws/react/build-a-backend/ to add storage, functions, and more
  */
-defineBackend({
+const backend = defineBackend({
   auth,
   data,
-  storage
+  storage,
 });
