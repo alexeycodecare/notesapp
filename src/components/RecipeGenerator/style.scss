@@ -1,3 +1,5 @@
+@use '../../sass/mixins' as *;
+
 .recipe-generator {
   display: grid;
   gap: 1.5rem;
@@ -110,7 +112,7 @@
   white-space: nowrap;
 }
 
-@media (max-width: 640px) {
+@include less-than(xs) {
   .recipe-generator__intro,
   .recipe-generator__form,
   .recipe-generator__result {
@@ -164,6 +166,12 @@
   gap: 0.75rem;
   justify-content: space-between;
   padding: 0.75rem 1rem;
+
+  @include less-than(sm) {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
 
   h4 {
     margin: 0;
