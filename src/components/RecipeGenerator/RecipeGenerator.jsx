@@ -14,6 +14,7 @@ const STARTERS = [
 
 export default function RecipeGenerator() {
   const [description, setDescription] = useState('');
+  const [generationCleared, setGenerationCleared] = useState(false);
   const [requestError, setRequestError] = useState('');
   const [savedRecipes, setSavedRecipes] = useState([]);
   const [isSaving, setIsSaving] = useState(false);
@@ -99,6 +100,8 @@ export default function RecipeGenerator() {
       }
 
       await fetchSavedRecipes();
+      setDescription('');
+      setGenerationCleared(true);
       setManualImageFile(null);
       setManualImagePreview('');
     } catch (saveErr) {
@@ -145,6 +148,7 @@ export default function RecipeGenerator() {
     }
 
     setRequestError('');
+    setGenerationCleared(false);
 
     try {
       await generateRecipe({ description: trimmedDescription });
@@ -200,8 +204,8 @@ export default function RecipeGenerator() {
       <section className="recipe-generator__result" aria-live="polite">
         <Heading level={3}>Generated recipe</Heading>
         {isLoading ? <Loader variation="linear" /> : null}
-        {!isLoading && !data?.name ? <p>Your generated recipe will appear here.</p> : null}
-        {data?.name ? (
+        {!isLoading && (!data?.name || generationCleared) ? <p>Your generated recipe will appear here.</p> : null}
+        {data?.name && !generationCleared ? (
           <div className="recipe-generator__card">
             <Heading level={4}>{data.name}</Heading>
             <View as="ul" className="recipe-generator__ingredients">
