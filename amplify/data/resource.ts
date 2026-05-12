@@ -1,4 +1,5 @@
 import { type ClientSchema, a, defineData } from '@aws-amplify/backend';
+import { generateImage } from '../functions/generateImage/resource';
 
 const schema = a.schema({
   Note: a
@@ -42,7 +43,7 @@ const schema = a.schema({
     })
     .returns(a.string()) // base64
     .authorization((allow) => allow.authenticated())
-    .handler(a.handler.function('generateImage')),
+    .handler(a.handler.function(generateImage)),
 });
 
 export type Schema = ClientSchema<typeof schema>;
