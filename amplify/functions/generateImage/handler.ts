@@ -36,7 +36,7 @@ export const handler = async (event: AppSyncEvent) => {
     };
 
     const command = new InvokeModelCommand({
-      modelId: "amazon.titan-image-generator-v2:0",
+      modelId: "amazon.nova-canvas-v2:0",
       contentType: "application/json",
       accept: "application/json",
       body: JSON.stringify(payload),
