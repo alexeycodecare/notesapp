@@ -34,6 +34,15 @@ const schema = a.schema({
       })
     )
     .authorization((allow) => allow.authenticated()),
+
+  generateImage: a
+    .mutation()
+    .arguments({
+      prompt: a.string().required(),
+    })
+    .returns(a.string()) // base64
+    .authorization((allow) => allow.authenticated())
+    .handler(a.handler.function('generateImage')),
 });
 
 export type Schema = ClientSchema<typeof schema>;

@@ -22,6 +22,9 @@ export default function RecipeGenerator() {
   const [manualImageFile, setManualImageFile] = useState(null);
   const [manualImagePreview, setManualImagePreview] = useState('');
   const [{ data, isLoading, error }, generateRecipe] = useAIGeneration('generateRecipe');
+  const [generatedImage, setGeneratedImage] = useState(null);
+  const [isGeneratingImage, setIsGeneratingImage] = useState(false);
+  const [imageError, setImageError] = useState('');
 
   useEffect(() => {
     return () => {
@@ -70,14 +73,35 @@ export default function RecipeGenerator() {
     const description = `**Ingredients:**\n${ingredientsList}\n\n**Instructions:**\n${data.instructions ?? ''}`;
 
     try {
-      let imageName = null;
+      let noteImageName = null;
 
-      if (manualImageFile) {
+      if (generatedImage) {
+        const imageName = `${Date.now()}-${data.name.toLowerCase().replace(/[^a-z0-9]+/g, '-')}.png`;
+
+        const byteCharacters = atob(generatedImage);
+        const byteNumbers = new Array(byteCharacters.length)
+          .fill(0)
+          .map((_, i) => byteCharacters.charCodeAt(i));
+
+        const byteArray = new Uint8Array(byteNumbers);
+
+        await uploadData({
+          path: ({ identityId }) => `media/${identityId}/${imageName}`,
+          data: byteArray,
+          options: {
+            contentType: 'image/png',
+          },
+        }).result;
+
+        noteImageName = imageName;
+      } else if (manualImageFile) {
         const mimeType = manualImageFile.type || 'image/png';
         const extension =
-          manualImageFile.name.split('.').pop()?.toLowerCase() ||
-          (mimeType.includes('jpeg') ? 'jpg' : mimeType.includes('webp') ? 'webp' : 'png');
-        imageName = `${Date.now()}-${data.name.toLowerCase().replace(/[^a-z0-9]+/g, '-')}.${extension}`;
+          manualImageFile.name.split('.').pop()?.toLowerCase() || 'png';
+
+        const imageName = `${Date.now()}-${data.name
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, '-')}.${extension}`;
 
         await uploadData({
           path: ({ identityId }) => `media/${identityId}/${imageName}`,
@@ -86,12 +110,14 @@ export default function RecipeGenerator() {
             contentType: mimeType,
           },
         }).result;
+
+        noteImageName = imageName;
       }
 
       const { errors } = await client.models.Note.create({
         name: data.name,
         description,
-        ...(imageName ? { image: imageName } : {}),
+        ...(noteImageName ? { image: noteImageName } : {}),
       });
 
       if (errors?.length) {
@@ -108,6 +134,31 @@ export default function RecipeGenerator() {
       setSaveError(saveErr instanceof Error ? saveErr.message : 'Failed to save recipe.');
     } finally {
       setIsSaving(false);
+    }
+  }
+
+  async function handleGenerateImage() {
+    if (!data?.name) return;
+
+    setIsGeneratingImage(true);
+    setImageError('');
+
+    try {
+      const prompt = `${data.name}. Food photography, realistic, high quality`;
+
+      const result = await client.mutations.generateImage({
+        prompt,
+      });
+
+      const base64 = result.data;
+
+      setGeneratedImage(base64);
+      setManualImageFile(null);
+      setManualImagePreview('');
+    } catch (err) {
+      setImageError(err instanceof Error ? err.message : 'Image generation failed');
+    } finally {
+      setIsGeneratingImage(false);
     }
   }
 
@@ -155,6 +206,7 @@ export default function RecipeGenerator() {
       setSaveError('');
       setManualImageFile(null);
       setManualImagePreview('');
+      setGeneratedImage(null);
     } catch (generationError) {
       setRequestError(generationError instanceof Error ? generationError.message : 'Recipe generation failed.');
     }
@@ -214,6 +266,29 @@ export default function RecipeGenerator() {
               ))}
             </View>
             <p className="recipe-generator__instructions">{data.instructions}</p>
+
+            <div className="recipe-generator__image-actions">
+              <Button
+                size="small"
+                onClick={handleGenerateImage}
+                isLoading={isGeneratingImage}
+              >
+                Generate image
+              </Button>
+            </div>
+
+            {imageError ? <p className="recipe-generator__error">{imageError}</p> : null}
+
+            {generatedImage ? (
+              <div className="recipe-generator__upload-preview">
+                <img
+                  className="recipe-generator__upload-thumbnail"
+                  src={`data:image/png;base64,${generatedImage}`}
+                  alt={`Generated visual for ${data.name}`}
+                />
+              </div>
+            ) : null}
+
             <label className="recipe-generator__upload">
               <span>Upload image (optional)</span>
               <input type="file" accept="image/*" onChange={handleManualImageChange} />
