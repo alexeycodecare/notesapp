@@ -9,7 +9,7 @@ export const handler = async (event: any) => {
     const { prompt } = event.arguments;
 
     const command = new InvokeModelCommand({
-      modelId: "amazon.titan-image-generator-v1",
+      modelId: "amazon.nova-canvas-v2:0",
       contentType: "application/json",
       accept: "application/json",
       body: JSON.stringify({
