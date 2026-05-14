@@ -6,4 +6,5 @@ export const generateImage = defineFunction({
   environment: {
     OPENAI_API_KEY: secret('OPENAI_API_KEY'),
   },
+  timeoutSeconds: 30,
 });
