@@ -13,7 +13,6 @@ frontend:
         - npx ampx generate outputs --app-id $AWS_APP_ID --branch $AWS_BRANCH
     build:
       commands:
-        - echo "OPENAI_API_KEY=$OPENAI_API_KEY" >> .env
         - npm run build
   artifacts:
     baseDirectory: dist
