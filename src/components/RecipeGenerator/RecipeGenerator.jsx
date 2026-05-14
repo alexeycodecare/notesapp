@@ -145,12 +145,13 @@ export default function RecipeGenerator() {
 
     try {
       const prompt = `${data.name}. Food photography, realistic, high quality`;
+      // "high quality, detailed, cinematic lighting, 4k, professional photography"
 
       const result = await client.mutations.generateImage({
         prompt,
       });
 
-      const base64 = result.data;
+      const base64 = result.data.image;
 
       setGeneratedImage(base64);
       setManualImageFile(null);

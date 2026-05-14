@@ -41,7 +41,9 @@ const schema = a.schema({
     .arguments({
       prompt: a.string().required(),
     })
-    .returns(a.string()) // base64
+    .returns(a.customType({
+      image: a.string(), // base64
+    }))
     .authorization((allow) => allow.authenticated())
     .handler(a.handler.function(generateImage)),
 });

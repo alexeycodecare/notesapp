@@ -13,16 +13,3 @@ const backend = defineBackend({
   storage,
   generateImage,
 });
-
-import * as iam from 'aws-cdk-lib/aws-iam';
-
-// получаем lambda
-const fn = backend.generateImage.resources.lambda;
-
-// добавляем права
-fn.addToRolePolicy(
-  new iam.PolicyStatement({
-    actions: ["bedrock:InvokeModel"],
-    resources: ["*"],
-  })
-);
