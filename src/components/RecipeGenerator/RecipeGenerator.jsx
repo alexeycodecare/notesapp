@@ -66,6 +66,11 @@ export default function RecipeGenerator() {
       return;
     }
 
+    if (isGeneratingImage) {
+      setSaveError('Please wait for image generation to complete before saving.');
+      return;
+    }
+
     setIsSaving(true);
     setSaveError('');
 
@@ -309,6 +314,7 @@ export default function RecipeGenerator() {
               <Button
                 variation="primary"
                 size="small"
+                isDisabled={isGeneratingImage}
                 isLoading={isSaving}
                 loadingText="Saving"
                 onClick={handleSaveRecipe}
