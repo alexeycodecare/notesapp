@@ -3,18 +3,25 @@ import OpenAI from "openai";
 type AppSyncEvent = {
   arguments: {
     prompt: string;
+    size?: string;
   };
 };
 
 export const handler = async (event: AppSyncEvent) => {
   try {
-    const { prompt } = event.arguments;
-    const apiKey = process.env.OPENAI_API_KEY;
+    const { prompt, size = "1024x1024" } = event.arguments;
 
     if (!prompt) {
       throw new Error("Prompt is required");
     }
 
+    if (!["1024x1024", "1024x1536", "1536x1024", "auto"].includes(size)) {
+      throw new Error(
+        `Invalid size '${size}'. Supported sizes are 1024x1024, 1024x1536, 1536x1024, and auto.`
+      );
+    }
+
+    const apiKey = process.env.OPENAI_API_KEY;
     if (!apiKey) {
       throw new Error(
         "OPENAI_API_KEY is not configured for this Lambda environment"
@@ -26,7 +33,7 @@ export const handler = async (event: AppSyncEvent) => {
     const result = await openai.images.generate({
       model: "gpt-image-1",
       prompt,
-      size: "512x512",
+      size,
     });
 
     if (!result.data || !result.data.length) {
