@@ -11,7 +11,7 @@ const SUPPORTED_SIZES = ["1024x1024", "1024x1536", "1536x1024", "auto"] as const
 
 export const handler = async (event: AppSyncEvent) => {
   try {
-    const { prompt, size = "auto" } = event.arguments;
+    const { prompt, size = "1024x1536" } = event.arguments;
 
     if (!prompt) {
       throw new Error("Prompt is required");
@@ -33,9 +33,10 @@ export const handler = async (event: AppSyncEvent) => {
     const openai = new OpenAI({ apiKey });
 
     const result = await openai.images.generate({
-      model: "gpt-image-1",
+      model: "gpt-image-2",
       prompt,
       size,
+      quality: "low",
     });
 
     if (!result.data || !result.data.length) {
