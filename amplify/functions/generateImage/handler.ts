@@ -7,15 +7,17 @@ type AppSyncEvent = {
   };
 };
 
+const SUPPORTED_SIZES = ["1024x1024", "1024x1536", "1536x1024", "auto"] as const;
+
 export const handler = async (event: AppSyncEvent) => {
   try {
-    const { prompt, size = "1024x1024" } = event.arguments;
+    const { prompt, size = "auto" } = event.arguments;
 
     if (!prompt) {
       throw new Error("Prompt is required");
     }
 
-    if (!["1024x1024", "1024x1536", "1536x1024", "auto"].includes(size)) {
+    if (!SUPPORTED_SIZES.includes(size as (typeof SUPPORTED_SIZES)[number])) {
       throw new Error(
         `Invalid size '${size}'. Supported sizes are 1024x1024, 1024x1536, 1536x1024, and auto.`
       );

@@ -144,7 +144,7 @@ export default function RecipeGenerator() {
     setImageError('');
 
     try {
-      const prompt = `${data.name}. Food photography, realistic, high quality`;
+      const prompt = `${data.name}. Food photography, realistic.`;
       // "high quality, detailed, cinematic lighting, 4k, professional photography"
 
       const result = await client.mutations.generateImage({
