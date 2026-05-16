@@ -58,7 +58,14 @@ export default function RecipeGenerator() {
       }),
     );
 
-    setSavedRecipes(withUrls);
+    const sortedByNewest = [...withUrls].sort((a, b) => {
+      const aTime = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+      const bTime = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+
+      return bTime - aTime;
+    });
+
+    setSavedRecipes(sortedByNewest);
   }
 
   async function handleSaveRecipe() {
@@ -75,7 +82,8 @@ export default function RecipeGenerator() {
     setSaveError('');
 
     const ingredientsList = (data.ingredients ?? []).join('\n');
-    const description = `**Ingredients:**\n${ingredientsList}\n\n**Instructions:**\n${data.instructions ?? ''}`;
+    const approximateTime = data.approximateTime?.trim();
+    const description = `${approximateTime ? `**Approximate cooking time:** ${approximateTime}\n\n` : ''}**Ingredients:**\n${ingredientsList}\n\n**Instructions:**\n${data.instructions ?? ''}`;
 
     try {
       let noteImageName = null;
@@ -149,8 +157,9 @@ export default function RecipeGenerator() {
     setImageError('');
 
     try {
-      const prompt = `${data.name}. Food photography, realistic.`;
-      // "high quality, detailed, cinematic lighting, 4k, professional photography"
+      const prompt = `${data.name}.
+        Food photography, realistic, cinematic lighting, detailed, professional photography, high quality, 4k.
+      `;
 
       const result = await client.mutations.generateImage({
         prompt,
@@ -224,7 +233,7 @@ export default function RecipeGenerator() {
         <p className="recipe-generator__eyebrow">Amplify Generation</p>
         <Heading level={2}>Generate a recipe from a short brief</Heading>
         <Text>
-          This generation route returns a structured recipe with a title, ingredient list, and cooking instructions in one response.
+          This generation route returns a structured recipe with a title, approximate cooking time, ingredient list, and cooking instructions in one response.
         </Text>
       </div>
 
@@ -266,6 +275,9 @@ export default function RecipeGenerator() {
         {data?.name && !generationCleared ? (
           <div className="recipe-generator__card">
             <Heading level={4}>{data.name}</Heading>
+            {data.approximateTime ? (
+              <p className="recipe-generator__time">Approximate cooking time: {data.approximateTime}</p>
+            ) : null}
             <View as="ul" className="recipe-generator__ingredients">
               {data.ingredients?.map((ingredient) => (
                 <li key={ingredient}>{ingredient}</li>
@@ -273,20 +285,21 @@ export default function RecipeGenerator() {
             </View>
             <p className="recipe-generator__instructions">{data.instructions}</p>
 
-            <div className="recipe-generator__image-actions">
-              <Button
-                size="small"
-                onClick={handleGenerateImage}
-                isLoading={isGeneratingImage}
-              >
-                Generate image
-              </Button>
-            </div>
+            {(!generatedImage && !manualImagePreview) ? (
+              <div className="recipe-generator__image-actions">
+                <Button
+                  size="small"
+                  onClick={handleGenerateImage}
+                  isLoading={isGeneratingImage}
+                >
+                  Generate image
+                </Button>
+              </div>) : null}
 
             {imageError ? <p className="recipe-generator__error">{imageError}</p> : null}
 
             {generatedImage ? (
-              <div className="recipe-generator__upload-preview">
+              <div className="recipe-generator__upload-preview-generated">
                 <img
                   className="recipe-generator__upload-thumbnail"
                   src={`data:image/png;base64,${generatedImage}`}
@@ -295,12 +308,14 @@ export default function RecipeGenerator() {
               </div>
             ) : null}
 
-            <label className="recipe-generator__upload">
-              <span>Upload image (optional)</span>
-              <input type="file" accept="image/*" onChange={handleManualImageChange} />
-            </label>
+            {!generatedImage ? (
+              <label className="recipe-generator__upload">
+                <span>Upload image (optional)</span>
+                <input type="file" accept="image/*" onChange={handleManualImageChange} />
+              </label>
+            ) : null}
             {manualImagePreview ? (
-              <div className="recipe-generator__upload-preview">
+              <div className="recipe-generator__upload-preview-manual">
                 <img
                   className="recipe-generator__upload-thumbnail"
                   src={manualImagePreview}

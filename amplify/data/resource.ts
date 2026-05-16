@@ -22,7 +22,7 @@ const schema = a.schema({
     .generation({
       aiModel: a.ai.model('Amazon Nova Micro'),
       systemPrompt:
-        'You are a practical recipe generator. Return a recipe name, a short ingredient list, and clear step-by-step cooking instructions based on the user description.',
+        'You are a practical recipe generator. Return a recipe name, approximate cooking time, a short ingredient list, and clear step-by-step cooking instructions based on the user description.',
     })
     .arguments({
       description: a.string().required(),
@@ -30,6 +30,7 @@ const schema = a.schema({
     .returns(
       a.customType({
         name: a.string(),
+        approximateTime: a.string(),
         ingredients: a.string().array(),
         instructions: a.string(),
       })

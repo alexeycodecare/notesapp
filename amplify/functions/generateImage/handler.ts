@@ -11,7 +11,7 @@ const SUPPORTED_SIZES = ["1024x1024", "1024x1536", "1536x1024", "auto"] as const
 
 export const handler = async (event: AppSyncEvent) => {
   try {
-    const { prompt, size = "1024x1536" } = event.arguments;
+    const { prompt, size = "1536x1024" } = event.arguments;
 
     if (!prompt) {
       throw new Error("Prompt is required");
